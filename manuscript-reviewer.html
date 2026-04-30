@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manuscript Review Studio</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --ice: #e8f4f8;
+    --deep-navy: #0d1b2a;
+    --midnight: #1a2a3a;
+    --slate: #2c3e50;
+    --gold: #c9a84c;
+    --blush: #d4768a;
+    --frost: #a8ccd7;
+    --ink: #0d1b2a;
+    --puck: #1e1e2e;
+    --accent: #e87070;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--deep-navy);
+    color: #e8e8e8;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* BACKGROUND TEXTURE */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(212,118,138,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 50%, rgba(13,27,42,0.9) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* RINK LINES */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 50%; transform: translateX(-50%);
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, rgba(168,204,215,0.08), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+
+  /* HEADER */
+  header {
+    text-align: center;
+    margin-bottom: 48px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+
+  .logo-mark::before, .logo-mark::after {
+    content: '—';
+    opacity: 0.4;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 400;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--blush);
+  }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--frost);
+    opacity: 0.7;
+    letter-spacing: 0.5px;
+  }
+
+  /* STORY BIBLE SECTION */
+  .story-bible {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(201,168,76,0.15);
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(201,168,76,0.2);
+  }
+
+  .bible-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 600px) { .bible-grid { grid-template-columns: 1fr; } }
+
+  input, textarea, select {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    color: #e8e8e8;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 14px;
+    transition: border-color 0.2s;
+    outline: none;
+    resize: vertical;
+  }
+
+  input:focus, textarea:focus { border-color: rgba(201,168,76,0.5); }
+  input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.25); }
+
+  /* PHASE NAVIGATION */
+  .phase-nav {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .phase-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .phase-btn:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }
+
+  .phase-btn.active {
+    background: var(--midnight);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  .phase-btn.done {
+    border-color: rgba(132,200,140,0.4);
+    color: rgba(132,200,140,0.7);
+  }
+
+  /* REVIEW PANEL */
+  .review-panel {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 24px 28px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .phase-info h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .phase-info p {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.5;
+  }
+
+  .model-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .model-sonnet { background: rgba(201,168,76,0.12); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+  .model-haiku { background: rgba(168,204,215,0.1); color: var(--frost); border: 1px solid rgba(168,204,215,0.2); }
+
+  .panel-body { padding: 24px 28px; }
+
+  /* TASK SELECTOR */
+  .task-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) { .task-grid { grid-template-columns: 1fr; } }
+
+  .task-card {
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+  }
+
+  .task-card:hover { border-color: rgba(201,168,76,0.3); background: rgba(201,168,76,0.04); }
+
+  .task-card.selected { border-color: var(--gold); background: rgba(201,168,76,0.08); }
+
+  .task-card h4 {
+    font-size: 13px;
+    font-weight: 500;
+    color: #fff;
+    margin-bottom: 4px;
+  }
+
+  .task-card p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+  }
+
+  /* INPUT AREA */
+  .input-area { margin-bottom: 16px; }
+  .input-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.35);
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  textarea.main-input {
+    min-height: 160px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* SUBMIT BUTTON */
+  .submit-btn {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08));
+    border: 1px solid rgba(201,168,76,0.35);
+    border-radius: 10px;
+    color: var(--gold);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .submit-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.12));
+    border-color: var(--gold);
+  }
+
+  .submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* RESPONSE AREA */
+  .response-area {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    display: none;
+  }
+
+  .response-area.visible { display: block; }
+
+  .response-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .response-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--blush);
+  }
+
+  .copy-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .copy-btn:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.7); }
+
+  .response-content {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 20px;
+    font-size: 13.5px;
+    line-height: 1.75;
+    color: rgba(255,255,255,0.85);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .response-content::-webkit-scrollbar { width: 4px; }
+  .response-content::-webkit-scrollbar-track { background: transparent; }
+  .response-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  /* SAVE NOTE BUTTON */
+  .save-note-btn {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: rgba(212,118,138,0.1);
+    border: 1px solid rgba(212,118,138,0.25);
+    border-radius: 8px;
+    color: var(--blush);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .save-note-btn:hover { background: rgba(212,118,138,0.18); }
+
+  /* NOTES LOG */
+  .notes-section {
+    margin-top: 40px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .note-card {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-left: 3px solid var(--blush);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+  }
+
+  .note-card h5 {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .note-card p {
+    font-size: 12.5px;
+    color: rgba(255,255,255,0.65);
+    line-height: 1.6;
+    max-height: 100px;
+    overflow: hidden;
+  }
+
+  .delete-note {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.2);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .delete-note:hover { color: var(--accent); }
+
+  .export-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    color: rgba(255,255,255,0.5);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+  }
+
+  .export-btn:hover { border-color: rgba(255,255,255,0.3); color: rgba(255,255,255,0.8); }
+
+  /* LOADING SPINNER */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(201,168,76,0.3);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STREAMING CURSOR */
+  .streaming::after {
+    content: '▊';
+    animation: blink 0.8s step-end infinite;
+    color: var(--gold);
+    font-size: 12px;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* PROGRESS DOTS */
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: background 0.3s;
+  }
+
+  .dot.active { background: var(--gold); }
+  .dot.done { background: rgba(132,200,140,0.5); }
+
+  /* EMPTY STATE */
+  .empty-notes {
+    text-align: center;
+    padding: 32px;
+    color: rgba(255,255,255,0.2);
+    font-size: 13px;
+    font-style: italic;
+  }
+
+  .tip-banner {
+    background: rgba(168,204,215,0.05);
+    border: 1px solid rgba(168,204,215,0.12);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: rgba(168,204,215,0.6);
+    line-height: 1.5;
+  }
+
+  .tip-banner strong { color: var(--frost); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo-mark">Manuscript Review Studio</div>
+    <h1>From <em>First Kiss</em><br>to Final Line</h1>
+    <p class="subtitle">AI-assisted manuscript review · Romance · Hockey · 40 chapters</p>
+  </header>
+
+  <!-- STORY BIBLE -->
+  <div class="story-bible">
+    <div class="section-label">Story Bible — Set Once, Used Every Review</div>
+    <div class="bible-grid">
+      <input type="text" id="lead1" placeholder="Lead 1 name, role (e.g. Mara — PR director)">
+      <input type="text" id="lead2" placeholder="Lead 2 name, role (e.g. Dex — team captain)">
+      <input type="text" id="team" placeholder="Hockey team name & city">
+      <input type="text" id="genre" placeholder="Romance subgenre (e.g. forced proximity, rivals)">
+    </div>
+    <textarea id="theme" placeholder="Central theme(s) — e.g. 'learning to trust after betrayal; hockey as identity vs. freedom'" style="min-height:60px;margin-bottom:10px;"></textarea>
+    <textarea id="extraNotes" placeholder="Any other notes: timeline, POV structure, tone, trigger warnings, comps..." style="min-height:60px;"></textarea>
+  </div>
+
+  <!-- PHASE NAVIGATION -->
+  <div class="phase-nav" id="phaseNav"></div>
+
+  <!-- MAIN REVIEW PANEL -->
+  <div class="review-panel">
+    <div class="panel-header">
+      <div class="phase-info">
+        <h2 id="phaseTitle"></h2>
+        <p id="phaseDesc"></p>
+      </div>
+      <div class="model-badge" id="modelBadge"></div>
+    </div>
+    <div class="panel-body">
+      <div class="task-grid" id="taskGrid"></div>
+
+      <div class="tip-banner" id="tipBanner"></div>
+
+      <div class="input-area">
+        <span class="input-label" id="inputLabel">Paste your text here</span>
+        <textarea class="main-input" id="mainInput" placeholder="Paste chapter(s), dialogue, or scenes here..."></textarea>
+      </div>
+
+      <button class="submit-btn" id="submitBtn" onclick="runReview()">
+        <div class="spinner" id="spinner"></div>
+        <span id="submitLabel">Run Analysis</span>
+      </button>
+
+      <div class="response-area" id="responseArea">
+        <div class="response-header">
+          <span class="response-label">Analysis</span>
+          <button class="copy-btn" onclick="copyResponse()">Copy</button>
+        </div>
+        <div class="response-content" id="responseContent"></div>
+        <button class="save-note-btn" onclick="saveNote()">+ Save to Notes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-dots" id="progressDots"></div>
+
+  <!-- NOTES LOG -->
+  <div class="notes-section">
+    <div class="section-label">Review Notes Log</div>
+    <div id="notesContainer"><div class="empty-notes">Your saved notes will appear here.</div></div>
+    <button class="export-btn" onclick="exportNotes()">Export All Notes as .txt</button>
+  </div>
+
+</div>
+
+<script>
+const PHASES = [
+  {
+    id: 'arc',
+    label: 'Phase 1',
+    title: 'Big Picture Arc',
+    desc: 'Story structure, romance arc, theme, and hockey integration — the 40,000 foot view.',
+    model: 'Sonnet',
+    modelClass: 'model-sonnet',
+    tip: '<strong>Token tip:</strong> For this phase, paste a synopsis or your chapter summaries — not the full manuscript. Save the raw text for later phases.',
+    inputLabel: 'Paste synopsis, outline, or chapter summaries (not full text)',
+    tasks: [
+      { id: 'beats', label: 'Plot Beat Map', desc: 'Map inciting incident, midpoint, black moment & resolution' },
+      { id: 'romancearc', label: 'Romance Arc Check', desc: 'Does the emotional progression feel earned?' },
+      { id: 'hockey', label: 'Hockey Integration', desc: 'Is the sport woven into character motivation?' },
+      { id: 'theme', label: 'Theme Tracking', desc: 'Where does the theme land strongly vs. go quiet?' },
+    ]
+  },
+  {
+    id: 'character',
+    label: 'Phase 2',
+    title: 'Character & Relationship',
+    desc: 'Voice consistency, character profiles, relationship pacing, and supporting cast utility.',
+    model: 'Sonnet',
+    modelClass: 'model-sonnet',
+    tip: '<strong>Token tip:</strong> Send 5–8 chapters at a time. Focus on scenes where the characters interact most.',
+    inputLabel: 'Paste chapters or key scenes (5–8 chapters max per review)',
+    tasks: [
+      { id: 'profile', label: 'Character Profiles', desc: 'Extract who the characters ARE from the text itself' },
+      { id: 'voice', label: 'Voice Consistency', desc: 'Does each POV character sound the same throughout?' },
+      { id: 'reltimeline', label: 'Relationship Timeline', desc: 'Pace of tension — too fast, slow, or uneven?' },
+      { id: 'support', label: 'Supporting Cast', desc: 'Who serves the story? Who is a loose thread?' },
+    ]
+  },
+  {
+    id: 'structure',
+    label: 'Phase 3',
+    title: 'Chapter Structure',
+    desc: 'Scene function, hooks, pacing map, and chapter-level momentum across all 40 chapters.',
+    model: 'Haiku',
+    modelClass: 'model-haiku',
+    tip: '<strong>Token tip:</strong> This is where we use the lighter model. Paste 10 chapter summaries at a time for extraction tasks.',
+    inputLabel: 'Paste chapter summaries OR 3–5 raw chapters',
+    tasks: [
+      { id: 'summary', label: 'Chapter Summary Sweep', desc: 'Reveal redundancy, gaps, and plot-dead chapters' },
+      { id: 'hooks', label: 'Opening & Closing Hooks', desc: 'Flag weak chapter openers and low-momentum endings' },
+      { id: 'scenefunction', label: 'Scene Function Check', desc: 'Does each scene do 2+ jobs? Flag single-function scenes' },
+      { id: 'pacing', label: 'Pacing Map', desc: 'Find tension peaks, valleys, and saggy middles' },
+    ]
+  },
+  {
+    id: 'craft',
+    label: 'Phase 4',
+    title: 'Craft & Consistency',
+    desc: 'Continuity, repetition, dialogue quality, and show vs. tell — the craft layer.',
+    model: 'Sonnet',
+    modelClass: 'model-sonnet',
+    tip: '<strong>Token tip:</strong> For repetition and continuity, extract just the relevant element first (all dialogue, all character descriptions) rather than full chapters.',
+    inputLabel: 'Paste 2–4 chapters or extracted element (all dialogue, descriptions...)',
+    tasks: [
+      { id: 'continuity', label: 'Continuity Pass', desc: 'Flag timeline errors, detail contradictions, jersey numbers' },
+      { id: 'repetition', label: 'Repetition Check', desc: 'Overused words, phrases, and repeated emotional beats' },
+      { id: 'dialogue', label: 'Dialogue Punch-Up', desc: 'On-the-nose lines, expository dumps, unnatural speech' },
+      { id: 'showvtell', label: 'Show vs. Tell', desc: 'Flag told emotions during key romantic moments' },
+    ]
+  },
+  {
+    id: 'lineedits',
+    label: 'Phase 5',
+    title: 'Line Edits',
+    desc: 'Sentence-level polish — rhythm, filter words, adverbs, and readability.',
+    model: 'Sonnet',
+    modelClass: 'model-sonnet',
+    tip: '<strong>Token tip:</strong> Send 1–2 chapters at a time. Line edits on large blocks lose precision.',
+    inputLabel: 'Paste 1–2 chapters for line-level review',
+    tasks: [
+      { id: 'rhythm', label: 'Sentence Rhythm', desc: 'Flag monotonous paragraph rhythm and length patterns' },
+      { id: 'filterwords', label: 'Filter Word Cull', desc: '"She felt", "he noticed", "she saw" — remove the distance' },
+      { id: 'adverbs', label: 'Adverb Hunt', desc: 'Surface -ly adverbs propping up weak verbs' },
+      { id: 'hockey_auth', label: 'Hockey Authenticity', desc: 'Flag any rules, terminology, or game logistics that feel off' },
+    ]
+  }
+];
+
+let currentPhase = 0;
+let selectedTask = null;
+let notes = [];
+let lastResponse = '';
+
+function getBible() {
+  return {
+    lead1: document.getElementById('lead1').value || 'Lead 1',
+    lead2: document.getElementById('lead2').value || 'Lead 2',
+    team: document.getElementById('team').value || '[Hockey team]',
+    genre: document.getElementById('genre').value || '[romance subgenre]',
+    theme: document.getElementById('theme').value || '[theme not specified]',
+    extra: document.getElementById('extraNotes').value || ''
+  };
+}
+
+function buildSystemPrompt() {
+  const b = getBible();
+  return `You are an expert literary editor specializing in romance fiction and sports narratives. You are reviewing a hockey romance novel manuscript.
+
+STORY BIBLE:
+- Lead 1: ${b.lead1}
+- Lead 2: ${b.lead2}
+- Hockey Team: ${b.team}
+- Romance subgenre: ${b.genre}
+- Central theme(s): ${b.theme}
+- Additional notes: ${b.extra}
+
+Your feedback is:
+- Specific and actionable (cite exact passages when possible)
+- Organized with clear headers
+- Honest but constructive
+- Focused on the requested analysis type
+- Concise — avoid padding or repeating the question back`;
+}
+
+const PROMPTS = {
+  arc: {
+    beats: (text) => `Analyze this manuscript content and map the major plot beats:\n1. Inciting incident\n2. First plot turn\n3. Midpoint shift\n4. Dark/black moment\n5. Climax & resolution\n\nFor each, note: does it land with sufficient weight? Is the timing right?\n\n---\n${text}`,
+    romancearc: (text) => `Review the romance arc in this content. Track:\n- When the leads first connect emotionally (not just physically)\n- The first major romantic conflict\n- The emotional turning point\n- The black moment\n- The HEA/HFN resolution\n\nDoes the emotional progression feel EARNED? Where does the reader's investment build or lag?\n\n---\n${text}`,
+    hockey: (text) => `Analyze how hockey is integrated into this manuscript. Ask:\n- Does the sport feel authentic and researched?\n- Is hockey woven into CHARACTER MOTIVATION, or just setting wallpaper?\n- Flag any scenes where hockey could be replaced by any other sport with no change to the story\n- Where does the sport create unique romantic tension or plot opportunity?\n\n---\n${text}`,
+    theme: (text) => `Identify and track the central theme(s) through this manuscript content.\n- Where does the theme land with full force?\n- Where does it go quiet or get dropped?\n- Are there scenes that actively work AGAINST the theme?\n- How well does the ending crystallize the thematic statement?\n\n---\n${text}`,
+  },
+  character: {
+    profile: (text) => `Extract character profiles ONLY from what is on the page — not from any outside knowledge. For each major character, note:\n- Stated traits\n- Demonstrated traits (what they DO)\n- Contradictions between the two\n- What they want vs. what they need\n- Any inconsistencies in how they're portrayed\n\n---\n${text}`,
+    voice: (text) => `Analyze voice consistency for each POV character in this text.\n- Does each character have a distinct interior voice?\n- Do any characters sound interchangeable?\n- Are there moments where a character's thoughts or dialogue feel out of character?\n- Pull 2–3 specific examples per character showing voice strengths and weaknesses.\n\n---\n${text}`,
+    reltimeline: (text) => `Chart every meaningful moment between the romantic leads in this content:\n- First real connection\n- Tension-building moments\n- Pushback/conflict beats\n- Intimacy milestones\n\nThen assess: Is the pacing too fast, too slow, or uneven? Where should the heat be higher? Where should we slow down?\n\n---\n${text}`,
+    support: (text) => `Assess every supporting character in this manuscript content:\n- What function do they serve (plot, comic relief, foil, information delivery, emotional mirror)?\n- Which ones feel essential?\n- Which ones feel like loose threads or could be cut/merged?\n- Are any relationships with supporting characters underdeveloped?\n\n---\n${text}`,
+  },
+  structure: {
+    summary: (text) => `Summarize each chapter in 2–3 sentences. After the summaries, flag:\n- Any chapters that feel redundant with each other\n- Any chapters where neither the plot nor the romance advances\n- Chapters that feel too long or too short for their function\n\n---\n${text}`,
+    hooks: (text) => `Review every chapter opening and closing in this content.\n\nFor OPENINGS: Does each chapter start with forward momentum? Flag weak, slow, or generic openers.\n\nFor CLOSINGS: Does each chapter end with a reason to keep reading — a question, tension, emotional shift? Flag chapters that end flat.\n\nProvide specific rewrites for the 3 weakest examples.\n\n---\n${text}`,
+    scenefunction: (text) => `For each scene in this content, evaluate what jobs it does:\n- Advances plot\n- Reveals character\n- Raises stakes\n- Builds romance / sexual tension\n- Provides information / worldbuilding\n\nFlag any scenes that only do ONE of the above. Suggest how to add a second function without adding length.\n\n---\n${text}`,
+    pacing: (text) => `Map the tension and pacing across this content:\n- Where are the peaks (high stakes, conflict, intensity)?\n- Where are the valleys (rest, humor, connection)?\n- Where does the story sag or stall?\n- Is there a "mushy middle" — the dreaded chapter 15–28 slowdown?\n\nSuggest 3 specific pacing interventions.\n\n---\n${text}`,
+  },
+  craft: {
+    continuity: (text) => `Run a continuity check on this manuscript content. Flag:\n- Timeline inconsistencies (day of week, game schedule, time passing)\n- Physical detail contradictions (eye color, hair, injuries)\n- Hockey-specific errors (jersey numbers, game results, rule violations)\n- Setting contradictions (where characters are, geography)\n\nBe specific: quote the conflicting passages.\n\n---\n${text}`,
+    repetition: (text) => `Identify patterns of repetition in this content:\n1. Overused single words (list top 10)\n2. Repeated phrases or sentence constructions\n3. Emotional beats that recur too frequently (e.g. "her heart raced")\n4. Actions used as tics (lip-biting, jaw-clenching, hair-tucking)\n5. Any dialogue patterns that repeat\n\nFor each, suggest alternatives or note where repetition is intentional/effective.\n\n---\n${text}`,
+    dialogue: (text) => `Audit all dialogue in this content for:\n- On-the-nose lines where characters say exactly what they mean (flag and suggest subtext)\n- Expository dialogue (characters explaining things they'd already know)\n- Lines that don't sound natural to the character's established voice\n- Missed opportunities for wit, tension, or subtext\n- Dialect or vocabulary inconsistencies\n\nProvide rewrites for the 3–5 weakest exchanges.\n\n---\n${text}`,
+    showvtell: (text) => `Flag every instance of "told" emotion in this content rather than dramatized emotion. Focus especially on romantic and high-stakes moments.\n\nExamples of telling: "She felt nervous." "He was angry." "She loved him."\n\nFor each flagged passage:\n1. Quote the original\n2. Explain what's being told\n3. Suggest a shown version using action, sensation, or dialogue\n\n---\n${text}`,
+  },
+  lineedits: {
+    rhythm: (text) => `Analyze sentence rhythm and variety in this content:\n- Identify paragraphs where all sentences are the same length\n- Flag passages that feel monotonous or breathless\n- Note where rhythm works beautifully and why\n- Suggest 3 specific paragraph rewrites to improve rhythm\n\n---\n${text}`,
+    filterwords: (text) => `Hunt down all filter words and phrases in this content. These create distance between reader and character:\n- "She felt / he felt"\n- "She saw / he noticed / she heard"\n- "She thought / he realized / she wondered"\n- "It seemed / it appeared"\n\nList every instance with chapter/context reference. Rewrite 5 of the most common examples without filter words.\n\n---\n${text}`,
+    adverbs: (text) => `Surface all adverbs (especially -ly adverbs) used with dialogue tags and verbs of action in this content.\n\nFor each flagged adverb:\n1. Quote the sentence\n2. Name the weak verb being propped up\n3. Suggest a stronger verb that makes the adverb unnecessary\n\nAlso flag any adverbs that ARE earning their place and should be kept.\n\n---\n${text}`,
+    hockey_auth: (text) => `Review all hockey content in this manuscript for authenticity:\n- Rules and game mechanics\n- Penalty calls and their accuracy\n- Player positions and responsibilities\n- Rink geography and terminology\n- Training, injury, and recovery realism\n- Team dynamics and locker room culture\n\nFlag any moment that would pull a hockey-literate reader out of the story. Suggest corrections.\n\n---\n${text}`,
+  }
+};
+
+function init() {
+  renderPhaseNav();
+  renderPhase(0);
+  renderProgressDots();
+}
+
+function renderPhaseNav() {
+  const nav = document.getElementById('phaseNav');
+  nav.innerHTML = PHASES.map((p, i) => `
+    <button class="phase-btn ${i === currentPhase ? 'active' : ''}" onclick="renderPhase(${i})">${p.label}: ${p.title}</button>
+  `).join('');
+}
+
+function renderProgressDots() {
+  const dots = document.getElementById('progressDots');
+  dots.innerHTML = PHASES.map((p, i) => `<div class="dot ${i === currentPhase ? 'active' : ''}"></div>`).join('');
+}
+
+function renderPhase(idx) {
+  currentPhase = idx;
+  selectedTask = null;
+  const phase = PHASES[idx];
+
+  document.getElementById('phaseTitle').textContent = phase.title;
+  document.getElementById('phaseDesc').textContent = phase.desc;
+  document.getElementById('modelBadge').textContent = phase.model;
+  document.getElementById('modelBadge').className = `model-badge ${phase.modelClass}`;
+  document.getElementById('tipBanner').innerHTML = phase.tip;
+  document.getElementById('inputLabel').textContent = phase.inputLabel;
+  document.getElementById('mainInput').value = '';
+  document.getElementById('responseArea').className = 'response-area';
+  document.getElementById('responseContent').textContent = '';
+
+  const taskGrid = document.getElementById('taskGrid');
+  taskGrid.innerHTML = phase.tasks.map(t => `
+    <button class="task-card" id="task-${t.id}" onclick="selectTask('${t.id}')">
+      <h4>${t.label}</h4>
+      <p>${t.desc}</p>
+    </button>
+  `).join('');
+
+  renderPhaseNav();
+  renderProgressDots();
+}
+
+function selectTask(id) {
+  selectedTask = id;
+  document.querySelectorAll('.task-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById(`task-${id}`);
+  if (el) el.classList.add('selected');
+}
+
+async function runReview() {
+  const text = document.getElementById('mainInput').value.trim();
+  if (!text) { alert('Please paste some manuscript text first.'); return; }
+  if (!selectedTask) { alert('Please select an analysis type above.'); return; }
+
+  const phase = PHASES[currentPhase];
+  const promptFn = PROMPTS[phase.id]?.[selectedTask];
+  if (!promptFn) { alert('Prompt not found for this task.'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  const spinner = document.getElementById('spinner');
+  const label = document.getElementById('submitLabel');
+  const responseArea = document.getElementById('responseArea');
+  const responseContent = document.getElementById('responseContent');
+
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  label.textContent = 'Analyzing...';
+  responseArea.className = 'response-area visible';
+  responseContent.textContent = '';
+  responseContent.classList.add('streaming');
+
+  try {
+    const userPrompt = promptFn(text);
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: [{ role: 'user', content: userPrompt }]
+      })
+    });
+
+    const data = await response.json();
+    const result = data?.content?.map(b => b.text || '').join('') || 'No response received.';
+    lastResponse = result;
+    responseContent.textContent = result;
+  } catch (err) {
+    responseContent.textContent = `Error: ${err.message}`;
+  } finally {
+    responseContent.classList.remove('streaming');
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    label.textContent = 'Run Analysis';
+  }
+}
+
+function copyResponse() {
+  navigator.clipboard.writeText(lastResponse).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function saveNote() {
+  if (!lastResponse) return;
+  const phase = PHASES[currentPhase];
+  const taskObj = phase.tasks.find(t => t.id === selectedTask);
+  const note = {
+    id: Date.now(),
+    phase: phase.title,
+    task: taskObj?.label || selectedTask,
+    content: lastResponse,
+    time: new Date().toLocaleString()
+  };
+  notes.push(note);
+  renderNotes();
+}
+
+function renderNotes() {
+  const container = document.getElementById('notesContainer');
+  if (notes.length === 0) {
+    container.innerHTML = '<div class="empty-notes">Your saved notes will appear here.</div>';
+    return;
+  }
+  container.innerHTML = notes.map(n => `
+    <div class="note-card">
+      <h5>${n.phase} · ${n.task} · ${n.time}</h5>
+      <p>${n.content.slice(0, 400)}${n.content.length > 400 ? '…' : ''}</p>
+      <button class="delete-note" onclick="deleteNote(${n.id})">×</button>
+    </div>
+  `).join('');
+}
+
+function deleteNote(id) {
+  notes = notes.filter(n => n.id !== id);
+  renderNotes();
+}
+
+function exportNotes() {
+  if (notes.length === 0) { alert('No notes to export yet.'); return; }
+  const text = notes.map(n => `=== ${n.phase} · ${n.task} ===\n${n.time}\n\n${n.content}\n\n`).join('---\n\n');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'manuscript-review-notes.txt';
+  a.click();
+}
+
+init();
+</script>
+</body>
+</html>
